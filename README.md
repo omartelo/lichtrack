@@ -1,0 +1,62 @@
+# lichtrack
+
+YouTrack inside [lich](https://github.com/lichdotdev/lich): the agile board, the issue list, a card's own screen
+and the weekly timesheet, as a lich extension.
+
+## What it does
+
+- **Board**: pick a board and a sprint, drag a card to another column to change its state, choose which custom
+  fields a card shows. The board on screen is fetched again every minute.
+- **Issues**: a YouTrack search, with your saved searches one click away.
+- **Card**: title and description (Markdown, with a preview), tags, links and attachments, and the project's
+  fields down the right: single and multiple choice, users and periods are editable in place. Comments, logged
+  time and history each have a tab.
+- **New card**: the same screen, empty, with the fields of the project you pick.
+- **Timesheet**: what you logged in a week, by card and by day, and a row to log more.
+- **Open session**: starts a lich session in one of your open projects with the card as its first prompt.
+
+| Key | Does |
+| --- | --- |
+| `1` `2` `3` | Board, Issues, Timesheet |
+| `/` | Puts the keyboard in the search field |
+| `c` | New card |
+| `r` | Fetch again |
+| `Esc` | Back from a card |
+| `Ctrl+S` | Save the title and description being edited |
+| `Ctrl+Enter` | Send the comment, or create the card |
+
+## Install
+
+In lich's Settings, under Extensions, install from GitHub and paste `https://github.com/omartelo/lichtrack`.
+It needs lich 0.90.1 or newer.
+
+On first open, give it the URL of your YouTrack and a
+[permanent token](https://www.jetbrains.com/help/youtrack/server/manage-permanent-token.html). Both are kept
+on your machine only, in the extension's data directory, in a file only you can read.
+
+**Insecure connection** skips the verification of the server's certificate, for an instance behind a CA your
+machine does not trust. Whoever sits between you and the server can then read the token: prefer adding the CA
+to your system.
+
+## Limits
+
+- A period (an estimate) is typed in hours and minutes, such as `4h 30m`: days and weeks depend on the
+  instance's working hours.
+- Comments and logged time can be added, not yet edited or removed.
+- Time logged from the timesheet carries no activity type; the card's own tab does.
+- Dates and text fields of a card are shown, not edited.
+- The interface is in Portuguese.
+
+## Build
+
+```sh
+go build -o lichtrack .
+ln -s "$PWD" ~/.config/lich/extensions/lichtrack   # then restart lich
+go test ./...
+```
+
+`./release.sh vX.Y.Z` builds the archives and `checksums.txt` a release carries.
+
+## License
+
+MIT

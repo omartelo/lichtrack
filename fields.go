@@ -68,7 +68,7 @@ func (a *app) multiChoice(f youtrack.ProjectCustomField, chosen []string, empty,
 			labels = append(labels, o.label)
 		}
 	}
-	return a.choice(string(on(handler, field)), firstNonEmpty(strings.Join(labels, ", "), empty), 0, entries)
+	return a.choice(string(on(handler, field)), firstNonEmpty(strings.Join(labels, ", "), empty), fieldControlWidth, entries)
 }
 
 // toggleField reads "field index:option index" and flips that option of a

@@ -21,10 +21,11 @@ const (
 
 	cardHeight = 48
 	// A menu up to this long fits a small window whole.
-	menuMaxEntries   = 10
-	pickerRows       = 8
-	pickerRowHeight  = 32
-	pickerWidth      = 280
+	menuMaxEntries  = 10
+	pickerRows      = 8
+	pickerRowHeight = 32
+	// pickerWidth is the least a panel is wide; a wider field opens one as wide as itself.
+	pickerWidth      = 220
 	cardInset        = 6
 	cardGap          = 4
 	cardMetaSize     = 11
@@ -33,17 +34,19 @@ const (
 	selectWidth      = 180
 	fieldsPanelWidth = 260
 	fieldsPadding    = 16
-	fieldsGap        = 18
-	fieldLabelGap    = 6
-	fieldLabelSize   = 12
-	dialogWidth      = 560
-	composerHeight   = 140
-	workDateWidth    = 110
-	workTimeWidth    = 90
-	summarySize      = 16
-	boardGroup       = "board"
-	mutedColor       = "muted-foreground"
-	emptyFieldValue  = "—"
+	// fieldControlWidth is the room a control has in the fields' column.
+	fieldControlWidth = fieldsPanelWidth - 2*fieldsPadding
+	fieldsGap         = 18
+	fieldLabelGap     = 6
+	fieldLabelSize    = 12
+	dialogWidth       = 560
+	composerHeight    = 140
+	workDateWidth     = 110
+	workTimeWidth     = 90
+	summarySize       = 16
+	boardGroup        = "board"
+	mutedColor        = "muted-foreground"
+	emptyFieldValue   = "—"
 
 	// lich refuses a tree over 5000 nodes (docs/extensions.md, What lich
 	// enforces); a card is a handful of them, so a long column is cut.
@@ -90,7 +93,9 @@ func (a *app) choice(id, value string, width float64, entries []extension.MenuEn
 	for i, e := range shown {
 		rows[i] = extension.NavRow.New(
 			extension.NavRowProps{On: e.Checked, Height: pickerRowHeight, OnPress: on(hPick, e.OnSelect)},
-			extension.Label.New(extension.LabelProps{Text: e.Label, MaxLines: 1}),
+			// A row lays its content from the top; the box centers the label.
+			extension.Box.New(box{Height: pickerRowHeight, Justify: extension.JustifyCenter},
+				extension.Label.New(extension.LabelProps{Text: e.Label, MaxLines: 1})),
 		)
 	}
 	if len(rows) == 0 {
@@ -564,7 +569,7 @@ func (a *app) fieldNodes(d *detail) []node {
 		var control node
 		switch {
 		case single:
-			control = a.choice(string(on(hField, i)), firstNonEmpty(value, emptyFieldValue), 0, fieldEntries(f, value, hField, i))
+			control = a.choice(string(on(hField, i)), firstNonEmpty(value, emptyFieldValue), fieldControlWidth, fieldEntries(f, value, hField, i))
 		case multi:
 			control = a.multiChoice(f, valueKeys(d.issue, name), emptyFieldValue, hFieldToggle, i)
 		case kind == periodFieldType:
@@ -769,7 +774,7 @@ func (a *app) createView() node {
 			Value: c.desc, Placeholder: "Descrição (markdown)", Grow: true, OnChange: hNewDesc,
 		}).WithKey("new.desc")),
 	))
-	fields := []node{field("Projeto", a.choice(hNewProject, project, 0, entries))}
+	fields := []node{field("Projeto", a.choice(hNewProject, project, fieldControlWidth, entries))}
 	for i, f := range c.schema {
 		name, kind := f.Field.Name, f.Field.FieldType.ID
 		_, single := singleValueFields[kind]
@@ -783,7 +788,7 @@ func (a *app) createView() node {
 				}
 			}
 			fields = append(fields, field(name,
-				a.choice(string(on(hNewField, i)), firstNonEmpty(chosen, projectDefault), 0, fieldEntries(f, chosen, hNewField, i))))
+				a.choice(string(on(hNewField, i)), firstNonEmpty(chosen, projectDefault), fieldControlWidth, fieldEntries(f, chosen, hNewField, i))))
 		case multi:
 			fields = append(fields, field(name, a.multiChoice(f, c.multi[name], projectDefault, hNewFieldToggle, i)))
 		case kind == periodFieldType:

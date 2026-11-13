@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -750,5 +751,34 @@ func TestAvatar(t *testing.T) {
 	}
 	if authorization != "" {
 		t.Errorf("another host got Authorization %q; want none", authorization)
+	}
+}
+
+func TestSprintBoardOrdersColumnsAsTheBoardDoes(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/sprints/") {
+			_, _ = io.WriteString(w, `{"id":"s1","issues":[`+
+				`{"idReadable":"A-1","customFields":[{"name":"Fila","value":{"name":"Done"}}]},`+
+				`{"idReadable":"A-2","customFields":[{"name":"Fila","value":{"name":"To do"}}]}]}`)
+			return
+		}
+		// YouTrack lists the columns in no order; ordinal is where each one stands.
+		_, _ = io.WriteString(w, `{"id":"b1","columnSettings":{"field":{"name":"Fila","fieldType":{"id":"state[1]"}},"columns":[`+
+			`{"presentation":"DONE","ordinal":2,"fieldValues":[{"name":"Done"}]},`+
+			`{"presentation":"TO DO","ordinal":0,"fieldValues":[{"name":"To do"}]},`+
+			`{"presentation":"DOING","ordinal":1,"fieldValues":[{"name":"Doing"}]}]}}`)
+	}))
+	defer srv.Close()
+
+	board, err := New(srv.URL, testToken).SprintBoard(context.Background(), "b1", "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, c := range board.Columns {
+		got = append(got, c.Column.Presentation+":"+strconv.Itoa(len(c.Issues)))
+	}
+	if want := "TO DO:1 DOING:0 DONE:1"; strings.Join(got, " ") != want {
+		t.Errorf("columns = %v; want %s", got, want)
 	}
 }

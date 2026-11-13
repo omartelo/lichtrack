@@ -18,6 +18,8 @@ const (
 type Settings struct {
 	// CardFields names the custom fields a board card shows, in order.
 	CardFields []string `json:"cardFields"`
+	// Board is the id of the board last chosen, shown again on the next run.
+	Board string `json:"board,omitempty"`
 }
 
 // LoadSettings answers the zero Settings on a first run, which has no file.

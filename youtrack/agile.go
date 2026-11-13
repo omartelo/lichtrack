@@ -1,8 +1,10 @@
 package youtrack
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 )
 
 const (
@@ -11,7 +13,7 @@ const (
 	currentSprintID = "current"
 
 	sprintFields = "id,name,goal,start,finish,archived,isDefault,unresolvedIssuesCount"
-	agileFields  = "id,name,projects(" + projectFields + "),currentSprint(" + sprintFields + ")," +
+	agileFields  = "id,name,favorite,projects(" + projectFields + "),currentSprint(" + sprintFields + ")," +
 		"columnSettings(field(id,name,fieldType(id,valueType,isMultiValue))," +
 		"columns(id,presentation,isResolved,ordinal,fieldValues(id,name,isResolved)))"
 	sprintIssuesFields = sprintFields + ",issues(" + issueFields + ")"
@@ -43,8 +45,10 @@ type AgileColumn struct {
 }
 
 type Agile struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Favorite is the star the token's user gave the board.
+	Favorite       bool      `json:"favorite"`
 	Projects       []Project `json:"projects"`
 	CurrentSprint  *Sprint   `json:"currentSprint"`
 	ColumnSettings struct {
@@ -112,6 +116,8 @@ func (c *Client) SprintBoard(ctx context.Context, boardID, sprintID string) (Spr
 		return board, err
 	}
 
+	// The API lists the columns in no order; ordinal is where each stands.
+	slices.SortStableFunc(agile.ColumnSettings.Columns, func(a, b AgileColumn) int { return cmp.Compare(a.Ordinal, b.Ordinal) })
 	board.Agile = agile
 	board.Sprint = sprint.Sprint
 	columnByValue := map[string]int{}

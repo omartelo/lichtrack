@@ -618,3 +618,53 @@ func TestTickReloadsOnlyTheBoardOnScreen(t *testing.T) {
 		t.Errorf("%d requests with the board on screen; want its reload", a.busy)
 	}
 }
+
+func TestSortedQueryKeepsAnOrderTheQueryNames(t *testing.T) {
+	cases := []struct {
+		query string
+		order int
+		want  string
+	}{
+		{"for: me", 0, "for: me"},
+		{"for: me", 1, "for: me sort by: updated desc"},
+		{"", 2, "sort by: created desc"},
+		{"for: me Sort By: priority", 1, "for: me Sort By: priority"},
+		{"for: me", 99, "for: me"},
+		{"for: me", -1, "for: me"},
+	}
+	for _, c := range cases {
+		if got := sortedQuery(c.query, c.order); got != c.want {
+			t.Errorf("sortedQuery(%q, %d) = %q; want %q", c.query, c.order, got, c.want)
+		}
+	}
+}
+
+func TestChosenBoardIsKeptAndStarredBoardsLead(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/agiles") {
+			_, _ = io.WriteString(w, `[{"id":"b1","name":"Um"},{"id":"b2","name":"Dois","favorite":true},{"id":"b3","name":"Três","favorite":true}]`)
+			return
+		}
+		_, _ = io.WriteString(w, `[]`)
+	}))
+	defer srv.Close()
+	var sent []extension.Message
+	a := boardApp(srv.URL, &sent)
+	a.dataDir = t.TempDir()
+
+	a.loadBoard("", "")
+	(<-a.done)()
+	if a.boardID != "b2" || a.boards[0].ID != "b2" || a.boards[2].ID != "b1" {
+		t.Fatalf("with no board chosen: showing %q, menu %v; want the first starred board, starred ones first", a.boardID, a.boards)
+	}
+
+	a.event(extension.EventData{Handler: on(hBoard, "b1")})
+	(<-a.done)()
+	kept, err := LoadSettings(a.dataDir)
+	if err != nil || kept.Board != "b1" || a.boardID != "b1" {
+		t.Errorf("after choosing b1: settings %+v, %v, showing %q; want b1 kept", kept, err, a.boardID)
+	}
+	if len(sent) != 0 {
+		t.Errorf("choosing a board sent %+v; want no toast", sent)
+	}
+}

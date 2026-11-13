@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -54,6 +55,7 @@ const (
 	hSearch         = "search"
 	hFind           = "find"
 	hReload         = "reload"
+	hSort           = "sort"
 	hMore           = "more"
 	hBoard          = "board"
 	hSprint         = "sprint"
@@ -166,6 +168,8 @@ type app struct {
 	saved  []youtrack.SavedQuery
 	issues []youtrack.Issue
 	more   bool
+	// sort indexes sortOrders.
+	sort int
 
 	sel *detail
 
@@ -331,6 +335,11 @@ func (a *app) event(e extension.EventData) {
 			a.query = a.saved[i].Query
 			a.search(0)
 		}
+	case hSort:
+		if i, err := strconv.Atoi(arg); err == nil && i >= 0 && i < len(sortOrders) {
+			a.sort = i
+			a.search(0)
+		}
 	case hMore:
 		a.search(len(a.issues))
 	case hFind:
@@ -341,6 +350,8 @@ func (a *app) event(e extension.EventData) {
 			a.loadDetail(a.sel.issue.IDReadable)
 		}
 	case hBoard:
+		a.boardID = arg
+		a.saveSettings()
 		a.loadBoard(arg, "")
 	case hSprint:
 		a.loadBoard(a.boardID, arg)
@@ -474,13 +485,18 @@ func (a *app) reload() {
 func (a *app) loadBoard(boardID, sprintID string) {
 	yt := a.yt
 	a.bg("Não foi possível carregar o board", func(ctx context.Context) (func(), error) {
-		boards, err := yt.Boards(ctx, youtrack.Page{})
+		boards, err := yt.Boards(ctx, youtrack.Page{Top: menuPageSize})
 		if err != nil {
 			return nil, err
 		}
 		if len(boards) == 0 {
 			return func() { a.boards, a.sprints, a.board = nil, nil, youtrack.SprintBoard{} }, nil
 		}
+		// The starred boards lead the menu, and the first of them is the one
+		// shown until the person chooses another.
+		slices.SortStableFunc(boards, func(a, b youtrack.Agile) int {
+			return cmp.Compare(boolRank(b.Favorite), boolRank(a.Favorite))
+		})
 		agile := boards[0]
 		for _, b := range boards {
 			if b.ID == boardID {
@@ -518,7 +534,7 @@ func pickSprint(agile youtrack.Agile, sprints []youtrack.Sprint, wanted string) 
 }
 
 func (a *app) search(skip int) {
-	yt, query := a.yt, a.query
+	yt, query := a.yt, sortedQuery(a.query, a.sort)
 	a.bg("A busca falhou", func(ctx context.Context) (func(), error) {
 		found, err := yt.SearchIssues(ctx, query, youtrack.Page{Skip: skip})
 		if err != nil {
@@ -534,13 +550,47 @@ func (a *app) search(skip int) {
 	})
 }
 
+// sortOrders are the orders the issue list offers; clause is what the search
+// takes after the query.
+var sortOrders = []struct{ label, clause string }{
+	{"Ordem da busca", ""},
+	{"Atualizados por último", "sort by: updated desc"},
+	{"Criados por último", "sort by: created desc"},
+	{"Criados primeiro", "sort by: created asc"},
+	{"Atualizados há mais tempo", "sort by: updated asc"},
+}
+
+const sortKeyword = "sort by:"
+
+// sortedQuery is the query in the order chosen. A query that names its own
+// order keeps it: YouTrack would take two as a compound sort.
+func sortedQuery(query string, order int) string {
+	if order <= 0 || order >= len(sortOrders) || strings.Contains(strings.ToLower(query), sortKeyword) {
+		return query
+	}
+	return strings.TrimSpace(query + " " + sortOrders[order].clause)
+}
+
+func boolRank(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func (a *app) saveSettings() {
+	if err := SaveSettings(a.dataDir, Settings{CardFields: a.cardFields, Board: a.boardID}); err != nil {
+		a.fail("Não foi possível salvar as preferências", err)
+	}
+}
+
 func (a *app) loadSaved() {
 	if a.yt == nil || a.saved != nil {
 		return
 	}
 	yt := a.yt
 	a.bg("Não foi possível carregar as buscas salvas", func(ctx context.Context) (func(), error) {
-		saved, err := yt.SavedQueries(ctx, youtrack.Page{})
+		saved, err := yt.SavedQueries(ctx, youtrack.Page{Top: menuPageSize})
 		return func() { a.saved = saved }, err
 	})
 }
@@ -561,16 +611,22 @@ func (a *app) issueLists() [][]youtrack.Issue {
 	return lists
 }
 
-// boardFields names every custom field the cards on the board carry, in the
+// boardFields names every custom field the cards on screen carry, on the
+// board or in the issue list, in the
 // order the first card to have each lists them.
 func (a *app) boardFields() []string {
+	lists := [][]youtrack.Issue{a.issues}
+	if a.tab != tabIssues {
+		lists = nil
+		for _, c := range a.board.Columns {
+			lists = append(lists, c.Issues)
+		}
+	}
 	var names []string
-	for _, c := range a.board.Columns {
-		for _, issue := range c.Issues {
-			for _, f := range issue.CustomFields {
-				if !slices.Contains(names, f.Name) {
-					names = append(names, f.Name)
-				}
+	for _, issue := range slices.Concat(lists...) {
+		for _, f := range issue.CustomFields {
+			if !slices.Contains(names, f.Name) {
+				names = append(names, f.Name)
 			}
 		}
 	}
@@ -583,9 +639,7 @@ func (a *app) toggleCardField(name string) {
 	} else {
 		a.cardFields = append(slices.Clone(a.cardFields), name)
 	}
-	if err := SaveSettings(a.dataDir, Settings{CardFields: a.cardFields}); err != nil {
-		a.fail("Não foi possível salvar os campos do card", err)
-	}
+	a.saveSettings()
 }
 
 // loadAvatars fetches the pictures on screen that were not asked for yet. A

@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Printf("settings: %v", err)
 	}
-	a.cardFields = settings.CardFields
+	a.cardFields, a.boardID = settings.CardFields, settings.Board
 	cfg, err := youtrack.LoadConfig(dataDir)
 	switch {
 	case err == nil:

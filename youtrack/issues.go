@@ -110,7 +110,7 @@ func (c *Client) ApplyCommand(ctx context.Context, command string, readableIDs .
 const (
 	pathTags         = "/tags"
 	pathSavedQueries = "/savedQueries"
-	savedQueryFields = "id,name,query"
+	savedQueryFields = "id,name,query,pinned"
 )
 
 type Tag struct {
@@ -122,6 +122,8 @@ type SavedQuery struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Query string `json:"query"`
+	// Pinned is whether the token's user keeps the search in their sidebar.
+	Pinned bool `json:"pinned"`
 }
 
 func (c *Client) Tags(ctx context.Context, page Page) ([]Tag, error) {

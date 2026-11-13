@@ -48,7 +48,7 @@ const (
 	// lich refuses a tree over 5000 nodes (docs/extensions.md, What lich
 	// enforces); a card is a handful of them, so a long column is cut.
 	maxCardsPerColumn = 40
-	maxSavedChips     = 8
+	favoriteMark      = "★ "
 )
 
 type (
@@ -185,7 +185,10 @@ func (a *app) toolbar() node {
 		Triggers: []extension.TabsTrigger{{Text: "Board", Icon: "kanban"}, {Text: "Issues", Icon: "list"}, {Text: "Timesheet", Icon: "clock"}},
 	})}
 	if a.tab == tabBoard && len(a.boards) > 0 {
-		items = append(items, a.boardSelect(), a.sprintSelect(), a.cardFieldsMenu())
+		items = append(items, a.boardSelect(), a.sprintSelect())
+	}
+	if a.tab != tabSheet {
+		items = append(items, a.cardFieldsMenu())
 	}
 	items = append(items, grow(extension.Input.New(extension.InputProps{
 		Value: a.query, Placeholder: "Busca do YouTrack", Leading: "search", Mono: true, Clearable: true,
@@ -208,7 +211,11 @@ func (a *app) toolbar() node {
 func (a *app) boardSelect() node {
 	entries := make([]extension.MenuEntry, len(a.boards))
 	for i, b := range a.boards {
-		entries[i] = entry(b.Name, b.ID == a.boardID, on(hBoard, b.ID))
+		name := b.Name
+		if b.Favorite {
+			name = favoriteMark + name
+		}
+		entries[i] = entry(name, b.ID == a.boardID, on(hBoard, b.ID))
 	}
 	return a.choice(hBoard, a.board.Agile.Name, selectWidth, entries)
 }
@@ -336,6 +343,11 @@ func (a *app) issueFace(issue youtrack.Issue, onPress extension.Handler) node {
 	if who := assignee(issue); who.Login != "" {
 		under += " · " + userName(who)
 	}
+	for _, name := range a.cardFields {
+		if value := fieldValue(issue, name); value != "" {
+			under += " · " + value
+		}
+	}
 	return extension.NavRow.New(
 		extension.NavRowProps{Height: cardHeight, OnPress: onPress},
 		extension.TwoLines.New(extension.TwoLinesProps{Top: issue.Summary, Under: under}),
@@ -364,17 +376,33 @@ func avatar(image []byte, name string, size float64) node {
 }
 
 func (a *app) issuesView() node {
-	children := []node{}
-	if len(a.saved) > 0 {
-		chips := make([]node, min(len(a.saved), maxSavedChips))
-		for i := range chips {
-			chips[i] = extension.Chip.New(extension.ChipProps{
-				Label: a.saved[i].Name, On: a.saved[i].Query == a.query, OnPress: on(hSaved, i),
-			})
-		}
-		children = append(children, extension.Box.New(box{Padding: pad},
-			extension.Wrap.New(extension.WrapProps{GapX: gap, GapY: gap}, chips...)))
+	orders := make([]extension.MenuEntry, len(sortOrders))
+	for i, o := range sortOrders {
+		orders[i] = entry(o.label, i == a.sort, on(hSort, i))
 	}
+	bar := []node{a.choice(hSort, sortOrders[a.sort].label, selectWidth, orders)}
+	if len(a.saved) > 0 {
+		all := make([]extension.MenuEntry, len(a.saved))
+		for i, q := range a.saved {
+			all[i] = entry(q.Name, q.Query == a.query, on(hSaved, i))
+		}
+		bar = append(bar, a.choice(hSaved, "Buscas salvas", selectWidth, all))
+	}
+	// The searches pinned in YouTrack's sidebar are one press away; the rest
+	// are in the select.
+	for i, q := range a.saved {
+		if q.Pinned {
+			// A button, not a chip: lich draws a chip's count, and a 0 there
+			// reads as a search that found nothing.
+			variant := extension.VariantGhost
+			if q.Query == a.query {
+				variant = extension.VariantSecondary
+			}
+			bar = append(bar, button(q.Name, variant, on(hSaved, i)))
+		}
+	}
+	children := []node{extension.Box.New(box{Padding: pad},
+		extension.Wrap.New(extension.WrapProps{GapX: gap, GapY: gap}, bar...))}
 	if len(a.issues) == 0 {
 		return island(append(children, extension.EmptyState.New(extension.EmptyStateProps{
 			Icon: "search", Title: "Nenhum card encontrado", Description: a.query,

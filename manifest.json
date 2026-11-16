@@ -3,7 +3,7 @@
   "id": "youtrack-lich",
   "name": "YouTrack (unofficial)",
   "description": "Unofficial YouTrack client: the agile board, issue list, card screen and weekly timesheet inside lich.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "minLichVersion": "0.90.1",
   "executable": "youtrack-lich",
   "surfaces": [{ "id": "main", "title": "YouTrack", "icon": "kanban" }],

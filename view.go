@@ -387,24 +387,15 @@ func (a *app) issuesView() node {
 	}
 	bar := []node{a.choice(hSort, sortOrders[a.sort].label, selectWidth, orders)}
 	if len(a.saved) > 0 {
+		label := "Buscas salvas"
 		all := make([]extension.MenuEntry, len(a.saved))
 		for i, q := range a.saved {
 			all[i] = entry(q.Name, q.Query == a.query, on(hSaved, i))
-		}
-		bar = append(bar, a.choice(hSaved, "Buscas salvas", selectWidth, all))
-	}
-	// The searches pinned in YouTrack's sidebar are one press away; the rest
-	// are in the select.
-	for i, q := range a.saved {
-		if q.Pinned {
-			// A button, not a chip: lich draws a chip's count, and a 0 there
-			// reads as a search that found nothing.
-			variant := extension.VariantGhost
 			if q.Query == a.query {
-				variant = extension.VariantSecondary
+				label = q.Name
 			}
-			bar = append(bar, button(q.Name, variant, on(hSaved, i)))
 		}
+		bar = append(bar, a.choice(hSaved, label, selectWidth, all))
 	}
 	children := []node{extension.Box.New(box{Padding: pad},
 		extension.Wrap.New(extension.WrapProps{GapX: gap, GapY: gap}, bar...))}

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "id": "lichtrack",
   "name": "YouTrack",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minLichVersion": "0.90.1",
   "executable": "lichtrack",
   "surfaces": [{ "id": "main", "title": "YouTrack", "icon": "kanban" }],

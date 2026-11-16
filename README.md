@@ -1,7 +1,9 @@
-# lichtrack
+# youtrack-lich
 
 YouTrack inside [lich](https://github.com/lichdotdev/lich): the agile board, the issue list, a card's own screen
 and the weekly timesheet, as a lich extension.
+
+An unofficial client: not affiliated with or endorsed by JetBrains. YouTrack is a trademark of JetBrains s.r.o.
 
 ## What it does
 
@@ -27,7 +29,7 @@ and the weekly timesheet, as a lich extension.
 
 ## Install
 
-In lich's Settings, under Extensions, install from GitHub and paste `https://github.com/omartelo/lichtrack`.
+In lich's Settings, under Extensions, install from GitHub and paste `https://github.com/omartelo/youtrack-lich`.
 It needs lich 0.90.1 or newer.
 
 On first open, give it the URL of your YouTrack and a
@@ -50,8 +52,8 @@ to your system.
 ## Build
 
 ```sh
-go build -o lichtrack .
-ln -s "$PWD" ~/.config/lich/extensions/lichtrack   # then restart lich
+go build -o youtrack-lich .
+ln -s "$PWD" ~/.config/lich/extensions/youtrack-lich   # then restart lich
 go test ./...
 ```
 

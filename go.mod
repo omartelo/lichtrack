@@ -1,4 +1,4 @@
-module github.com/omartelo/lichtrack
+module github.com/omartelo/youtrack-lich
 
 go 1.22
 

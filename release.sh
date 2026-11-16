@@ -6,7 +6,7 @@
 #   ./release.sh v0.1.0
 set -eu
 
-id=lichtrack
+id=youtrack-lich
 targets="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64"
 
 version=${1:?usage: release.sh vX.Y.Z}

@@ -1,4 +1,4 @@
-// Command lichtrack is a lich extension: the YouTrack board, issue list and
+// Command youtrack-lich is a lich extension: the YouTrack board, issue list and
 // card detail inside lich's window.
 package main
 
@@ -11,7 +11,7 @@ import (
 
 	"github.com/lichdotdev/lich/extension"
 
-	"github.com/omartelo/lichtrack/youtrack"
+	"github.com/omartelo/youtrack-lich/youtrack"
 )
 
 func main() {

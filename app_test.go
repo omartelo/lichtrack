@@ -12,7 +12,7 @@ import (
 
 	"github.com/lichdotdev/lich/extension"
 
-	"github.com/omartelo/lichtrack/youtrack"
+	"github.com/omartelo/youtrack-lich/youtrack"
 )
 
 func TestParseDuration(t *testing.T) {

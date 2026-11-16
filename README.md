@@ -59,6 +59,11 @@ go test ./...
 
 `./release.sh vX.Y.Z` builds the archives and `checksums.txt` a release carries.
 
+`go run ./demo` serves the reads of a YouTrack with an invented team on `127.0.0.1:47920`, for trying a screen
+without a real instance. `./screenshots.sh` runs the extension against it in a lich of its own, on a virtual display,
+and writes the catalog's cover and screenshots to `listing/`: run it after changing a screen, before tagging, since the
+catalog reads `listing/` at the release's tag. It needs Xvfb, xdotool, ImageMagick and sqlite3.
+
 ## License
 
 MIT

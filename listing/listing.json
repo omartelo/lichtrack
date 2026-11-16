@@ -1,3 +1,10 @@
 {
-  "categories": ["issues"]
+  "categories": ["issues"],
+  "cover": "cover.png",
+  "screenshots": [
+    { "file": "screenshots/board.png", "alt": "A sprint board with its cards in four columns, from A fazer to Concluído, each card showing its priority, type and estimate" },
+    { "file": "screenshots/card.png", "alt": "A card's own screen: its Markdown description on the left, its editable fields, links and attachments down the right" },
+    { "file": "screenshots/issues.png", "alt": "The issue list for a YouTrack search, with the sort order and the saved searches in two selects above it" },
+    { "file": "screenshots/timesheet.png", "alt": "A week of logged time by card and by day, with the totals and a row to log more at the bottom" }
+  ]
 }
